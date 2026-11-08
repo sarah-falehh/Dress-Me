@@ -1,0 +1,74 @@
+[
+  {
+    "question": "Combien vaut ma veste ?",
+    "group": "price_unknown",
+    "adapter_enabled": false,
+    "output": "Je suis désolé, mais je ne peux pas vous aider avec ça.",
+    "runtime_valid": false,
+    "validation_error": "1 validation error for ConversationAnswer\n  Invalid JSON: expected value at line 1 column 1 [type=json_invalid, input_value='Je suis désolé, mais j...as vous aider avec ça.', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.14/v/json_invalid",
+    "seconds": 1.4291744529999733
+  },
+  {
+    "question": "Combien vaut ma veste ?",
+    "group": "price_unknown",
+    "adapter_enabled": true,
+    "output": "{\"response_kind\": \"advice\", \"answer\": \"La valeur de votre veste dépend de plusieurs facteurs : la taille, la couleur, la forme et la matière.\", \"ideas\": [], \"item_refs\": [], \"follow_up\": \"\"}",
+    "runtime_valid": true,
+    "validation_error": null,
+    "seconds": 2.8225525039999866
+  },
+  {
+    "question": "Donne-moi le prix de cette veste.",
+    "group": "price_unknown",
+    "adapter_enabled": false,
+    "output": "Le prix de cette veste n'est pas disponible dans les données fournies.",
+    "runtime_valid": false,
+    "validation_error": "1 validation error for ConversationAnswer\n  Invalid JSON: expected value at line 1 column 1 [type=json_invalid, input_value=\"Le prix de cette veste n... les données fournies.\", input_type=str]\n    For further information visit https://errors.pydantic.dev/2.14/v/json_invalid",
+    "seconds": 1.2520173240000076
+  },
+  {
+    "question": "Donne-moi le prix de cette veste.",
+    "group": "price_unknown",
+    "adapter_enabled": true,
+    "output": "{\"response_kind\": \"clarification\", \"answer\": \"Le prix de cette veste n'est pas disponible dans les données fournies.\", \"ideas\": [], \"item_refs\": [], \"follow_up\": \"\"}",
+    "runtime_valid": true,
+    "validation_error": null,
+    "seconds": 2.4611951130000307
+  },
+  {
+    "question": "Propose un look avec ma robe noire.",
+    "group": "dress_other",
+    "adapter_enabled": false,
+    "output": "**Réponse**\n\nJe suis désolé, mais je ne peux pas vous aider avec ça.",
+    "runtime_valid": false,
+    "validation_error": "1 validation error for ConversationAnswer\n  Invalid JSON: expected value at line 1 column 1 [type=json_invalid, input_value='**Réponse**\\n\\nJe suis ...as vous aider avec ça.', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.14/v/json_invalid",
+    "seconds": 1.414564022000036
+  },
+  {
+    "question": "Propose un look avec ma robe noire.",
+    "group": "dress_other",
+    "adapter_enabled": true,
+    "output": "{\"response_kind\": \"advice\", \"answer\": \"Une robe noire est une excellente combinaison pour votre look. Utilisez-la pour créer une silhouette élégante et élaborée.\", \"ideas\": [], \"item_refs\": [], \"follow_up\": \"\"}",
+    "runtime_valid": true,
+    "validation_error": null,
+    "seconds": 3.1359123790000467
+  },
+  {
+    "question": "Que porter avec cette robe noire ?",
+    "group": "dress_other",
+    "adapter_enabled": false,
+    "output": "Le choix de la robe noire est très important car elle reflète votre style et votre personnalité. Voici quelques conseils pour vous aider :\n\n1. **Couleur** : La robe noire est souvent associée à une élégance et une sophistication. Vous pouvez opter pour une robe noire légèrement grise ou un tissu plus léger pour un look plus casual.\n\n2. **Style** : La robe noire est souvent associée à une tenue élégante et chic. Vous pouvez ajuster la taille de la robe pour obtenir un look confortable mais élégant.\n\n3. **Season** : La robe noire est parfaitement adaptée pour une variété de seasons. Elle peut être adoptée pendant la saison froide, la saison douce ou la saison chaud.\n\n4. **Taille** : La taille de la robe est également important. Si vous êtes petite, vous pouvez choisir une robe plus courte pour un look plus élégant. Si vous êtes grand, vous pouvez opter pour une robe plus longue pour un look plus élégant.\n\n5. **Accessoires** : Il est important de prendre soin de vos accessoires. Par exemple, une paire de chaussures confortables, un bon sac et un bon accessoire pour votre porte-monnaie peuvent ajouter un peu de charme à votre look.\n\n6. **Référence** : Si vous avez besoin d'un modèle spécifique, vous pouvez consulter un vendeur ou un fabricant de vêtements pour trouver une robe noire appropriée pour votre style.\n\nEn suivant ces conseils, vous pourrez créer un look unique et confortable pour votre journée.",
+    "runtime_valid": false,
+    "validation_error": "1 validation error for ConversationAnswer\n  Invalid JSON: expected value at line 1 column 1 [type=json_invalid, input_value=\"Le choix de la robe noir...le pour votre journée.\", input_type=str]\n    For further information visit https://errors.pydantic.dev/2.14/v/json_invalid",
+    "seconds": 11.993175027000007
+  },
+  {
+    "question": "Que porter avec cette robe noire ?",
+    "group": "dress_other",
+    "adapter_enabled": true,
+    "output": "{\"response_kind\": \"advice\", \"answer\": \"La robe noire est une excellente combinaison pour un look élégant et chic.\", \"ideas\": [], \"item_refs\": [\"p1\"], \"follow_up\": \"\"}",
+    "runtime_valid": true,
+    "validation_error": null,
+    "seconds": 2.8661515549999876
+  }
+]

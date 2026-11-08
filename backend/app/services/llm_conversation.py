@@ -56,6 +56,13 @@ class ConversationAnswer(BaseModel):
 
 
 SYSTEM = """Tu es DressMe, un conseiller de style attentif, concret et capable de raisonner.
+Pour composer une tenue, propose 2 à 3 choix réellement différents quand les pièces disponibles le permettent,
+dans des entrées ideas séparées. Explique en quelques phrases naturelles pourquoi chaque choix convient.
+Varie les bases disponibles : par exemple un autre bas ou une robe, pas seulement les chaussures sur le même ensemble.
+Deux pièces de même catégorie et même couleur ne constituent pas deux choix différents à elles seules.
+Ne donne jamais une liste mélangeant les vêtements de plusieurs tenues. Tu tutoies la personne.
+wardrobe_size est un NOMBRE DE VÊTEMENTS, jamais une taille de vêtement ou une mesure de la personne.
+Ne déduis aucune taille, pointure, taille corporelle ou poids du nombre de pièces du dressing.
 Tu tutoies toujours l'utilisateur et réponds en français naturel à LA DERNIÈRE QUESTION, avec un vrai conseil et non
 une récitation de statistiques. Tu peux expliquer comment porter une pièce, proposer
 des associations, adapter un look à une occasion, discuter couleurs, style, entretien,
@@ -168,6 +175,11 @@ class ConversationValidationError(ValueError):
     """A concrete correction that can be sent back for one bounded repair attempt."""
 
 
+_SIZE_CLAIM = re.compile(
+    r"\b(?:taille|pointure|size)\b\s*(?:(?:est|de|du|:|=)\s*)?"
+    r"(\d{1,3}|XXXS|XXS|XS|XXXL|XXL|XL|S|M|L)\b", re.IGNORECASE)
+
+
 @dataclass(frozen=True)
 class ConversationPlan:
     known_refs: frozenset[str]
@@ -175,6 +187,7 @@ class ConversationPlan:
     labels: dict[str, str]
     unsupported_owned_types: frozenset[str]
     base_roles: dict[str, str]
+    user_measurements: frozenset[str] = frozenset()
 
     def response_format(self) -> dict[str, Any]:
         schema = ConversationAnswer.model_json_schema()
@@ -207,6 +220,18 @@ class ConversationPlan:
 
     def render(self, content: str) -> str:
         answer = ConversationAnswer.model_validate_json(content)
+        prose = [answer.answer, answer.follow_up, *(idea.title for idea in answer.ideas),
+                 *(idea.advice for idea in answer.ideas),
+                 *(text for idea in answer.ideas for text in idea.optional_additions)]
+        if any(match[1].upper() not in self.user_measurements for text in prose for match in _SIZE_CLAIM.finditer(text)):
+            raise ConversationValidationError(
+                "N'invente aucune taille ni pointure. Le nombre de vêtements n'est pas une mesure de la personne.")
+        if not answer.ideas and answer.response_kind == "advice":
+            roles = _base_roles_in_addition(answer.answer)
+            alternatives = re.search(r"\b(?:ou|sans|alternative|options?|pistes?|plutôt que)\b", answer.answer, re.IGNORECASE)
+            if {"one_piece", "bottom"} <= roles and not alternatives:
+                raise ConversationValidationError(
+                    "Ne mélange pas robe et bas dans une seule tenue. Mets les options dans des idées distinctes : robe OU haut + bas.")
         if answer.response_kind != "advice":
             answer.ideas = []
         if answer.response_kind == "opinion":
@@ -262,14 +287,15 @@ class ConversationPlan:
                 generic = next(category for category, names in SUBTYPES.items() if noun in names)
                 def generalize(match: re.Match) -> str:
                     article = match[1].lower()
-                    plural = article in {"tes", "ces", "les", "des"} or match[2].lower().endswith("s")
+                    qualifier = match[2] or ""
+                    plural = article in {"tes", "ces", "les", "des"} or match[3].lower().endswith("s")
                     if not plural:
-                        masculine = {"ta": "ton", "cette": "ce", "la": "le", "du": "du"}
-                        feminine = {"ton": "ta", "ce": "cette", "le": "la", "du": "de la"}
+                        masculine = {"ta": "ton", "cette": "ce", "la": "le", "du": "du", "une": "un"}
+                        feminine = {"ton": "ta", "ce": "cette", "le": "la", "du": "de la", "un": "une"}
                         article = (feminine if generic == "veste" else masculine).get(article, article)
-                    replacement = article + " " + generic + ("s" if plural and generic != "bas" else "")
+                    replacement = article + " " + qualifier + generic + ("s" if plural and generic != "bas" else "")
                     return replacement[0].upper() + replacement[1:] if match[0][0].isupper() else replacement
-                text = re.sub(r"\b(ton|ta|tes|ce|cette|ces|le|la|les|du|des)\s+(" + re.escape(noun) + r"s?)\b", generalize, text, flags=re.IGNORECASE)
+                text = re.sub(r"\b(ton|ta|tes|ce|cette|ces|le|la|les|du|des|un|une)\s+(mêmes?\s+)?(" + re.escape(noun) + r"s?)\b", generalize, text, flags=re.IGNORECASE)
             if not self.known_refs:
                 return text
             alternatives = "|".join(re.escape(ref) for ref in sorted(self.known_refs, key=len, reverse=True))
@@ -304,4 +330,6 @@ def build_conversation_plan(facts: dict[str, Any]) -> ConversationPlan:
                             for noun in nouns if noun not in declared)
     base_roles = {item["ref"]: BASE_ROLES[category] for item in facts.get("items", [])
                   if (category := str(item.get("category") or "").strip().casefold()) in BASE_ROLES}
-    return ConversationPlan(frozenset(refs), bool(facts.get("wardrobe_only")), labels, unsupported, base_roles)
+    user_text = " ".join([facts["question"], *(m["content"] for m in facts.get("history", []) if m["role"] == "user")])
+    measurements = frozenset(match[1].upper() for match in _SIZE_CLAIM.finditer(user_text))
+    return ConversationPlan(frozenset(refs), bool(facts.get("wardrobe_only")), labels, unsupported, base_roles, measurements)

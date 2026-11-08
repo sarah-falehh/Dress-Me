@@ -1,4 +1,5 @@
 from functools import lru_cache
+from typing import Literal
 
 from pydantic import Field
 from pydantic_settings import BaseSettings
@@ -47,6 +48,13 @@ class Settings(BaseSettings):
     # Optional stronger model for conversation only; saved narratives keep llm_model.
     llm_chat_model: str | None = None
     llm_chat_fallback_model: str | None = None
+    # Chat-only credentials keep the other agents' provider configuration intact.
+    llm_chat_provider: str | None = None
+    llm_chat_api_key: str | None = Field(default=None, repr=False)
+    # Conversation only: other agents and saved narratives keep their provider.
+    llm_chat_backend: Literal["provider", "lora"] = "provider"
+    llm_lora_adapter_dir: str = "app/ml/artifacts/llm_agent_lora"
+    llm_lora_max_new_tokens: int = Field(default=512, ge=64, le=1024)
     llm_chat_timeout_seconds: float = Field(default=20.0, gt=0, le=60)
     llm_timeout_seconds: float = Field(default=8.0, gt=0, le=60)
     llm_max_retries: int = Field(default=1, ge=0, le=2)

@@ -108,14 +108,16 @@ def chat(payload: ChatRequest, user: User = Depends(get_current_user), db: Sessi
     if selected_item is not None:
         facts["selected_item_ref"] = next(ref for ref, item in references.items() if item.id == selected_item.id)
     settings = get_settings()
-    chat_settings = settings.model_copy(update={"llm_model": settings.llm_chat_model or settings.llm_model,
+    chat_settings = settings.model_copy(update={"llm_provider": settings.llm_chat_provider or settings.llm_provider,
+                                                "llm_api_key": settings.llm_chat_api_key if settings.llm_chat_api_key is not None else settings.llm_api_key,
+                                                "llm_model": settings.llm_chat_model or settings.llm_model,
                                                 "llm_timeout_seconds": settings.llm_chat_timeout_seconds})
     agent = LLMAgent(settings=chat_settings)
     start = monotonic()
     result = agent.run(task="assistant", context=facts,
                        instruction="Réponds à la question précise en français à partir des données réelles du compte.",
                        cache_scope=f"chat:{user.id}:{payload.topic}:{payload.record_id}")
-    if not result["explanation"] and agent.last_failure == "rate_limit" and settings.llm_chat_fallback_model and settings.llm_chat_fallback_model != chat_settings.llm_model:
+    if settings.llm_chat_backend == "provider" and not result["explanation"] and agent.last_failure == "rate_limit" and settings.llm_chat_fallback_model and settings.llm_chat_fallback_model != chat_settings.llm_model:
         chat_settings = chat_settings.model_copy(update={"llm_model": settings.llm_chat_fallback_model, "llm_max_retries": 0})
         agent = LLMAgent(settings=chat_settings)
         result = agent.run(task="assistant", context=facts, instruction="Réponds à la question précise en français à partir des données réelles du compte.",
@@ -131,6 +133,8 @@ def chat(payload: ChatRequest, user: User = Depends(get_current_user), db: Sessi
               "optional_additions": idea["optional_additions"]} for idea in answer["ideas"]] if answer else []
     return {"status": "success" if answer else "unavailable", "explanation": answer["answer"] if answer else None,
             "ideas": ideas, "follow_up": answer["follow_up"] if answer else "", "decision": decision,
-            "evidence": evidence, "model": chat_settings.llm_model,
+            "evidence": evidence,
+            "model": "Qwen/Qwen2.5-0.5B-Instruct + DressMe LoRA" if settings.llm_chat_backend == "lora" else chat_settings.llm_model,
+            "inference_backend": settings.llm_chat_backend,
             "failure_reason": agent.last_failure if not answer else None,
             "elapsed_seconds": round(monotonic() - start, 2)}
