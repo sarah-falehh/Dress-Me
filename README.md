@@ -42,7 +42,7 @@ Les captures montrent l’interface web avec un compte de démonstration et des 
 
 ## Agents
 
-Les clients web et mobile utilisent l’API FastAPI. L’orchestrateur coordonne les traitements de recommandation, d’achat et de valise. Plusieurs agents partagent les mêmes modèles ou s’appuient sur des règles métier.
+Les clients web et mobile utilisent l’API FastAPI. L’agent orchestrateur, développé par **Hassan Zorkot**, coordonne les traitements de recommandation, d’achat et de valise. Plusieurs agents partagent les mêmes modèles ou s’appuient sur des règles métier.
 
 | Agent | Rôle et méthode | Où le voir |
 | --- | --- | --- |
