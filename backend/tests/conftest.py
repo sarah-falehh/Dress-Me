@@ -27,6 +27,7 @@ def isolate_enrichment_flags(monkeypatch):
     monkeypatch.setenv("RANKING_ENABLED", "false")
     monkeypatch.setenv("CONTEXTUAL_RAG_ENABLED", "false")
     monkeypatch.setenv("LLM_PROVIDER", "none")
+    monkeypatch.setenv("LLM_CHAT_BACKEND", "provider")
     get_settings.cache_clear()
     yield
     get_settings.cache_clear()
