@@ -207,6 +207,8 @@ class LLMAgent(BaseAgent):
     def run(self, *, context: dict[str, Any], instruction: str,
             task: str = "style_profile", cache_scope: str = "") -> dict[str, Any]:
         self.last_failure = None
+        if task == "assistant" and self.settings.llm_chat_backend == "lora":
+            return self._run_lora(context, instruction, cache_scope)
         if self.settings.llm_provider == "none":
             return {"explanation": None}
         try:
@@ -251,6 +253,38 @@ class LLMAgent(BaseAgent):
                     while len(self._cache) > self.settings.llm_cache_max_entries:
                         self._cache.popitem(last=False)
             return {"explanation": text}
+
+    def _run_lora(self, context: dict[str, Any], instruction: str, cache_scope: str) -> dict[str, Any]:
+        """Opt-in local conversation; never changes another agent's provider."""
+        try:
+            from app.services.llm_agent_lora import adapter_identity, generate_conversation
+
+            plan = build_conversation_plan(context)
+            payload = json.dumps({"facts": context}, ensure_ascii=False, sort_keys=True, allow_nan=False)
+            if len(payload) > 48000:
+                raise ValueError("Facts exceed input budget")
+            identity = adapter_identity(self.settings.llm_lora_adapter_dir)
+            cache_key = sha256(json.dumps(["lora-conversation-v3", identity, cache_scope,
+                instruction, payload, self.settings.llm_lora_max_new_tokens]).encode()).hexdigest()
+            with self._flights[int(cache_key[:8], 16) % len(self._flights)]:
+                with self._lock:
+                    entry = self._cache.get(cache_key)
+                    if entry and entry.expires > time.monotonic():
+                        self._cache.move_to_end(cache_key)
+                        return {"explanation": entry.text}
+                    self._cache.pop(cache_key, None)
+                text = generate_conversation(plan, payload, self.settings)
+                if self.settings.llm_cache_ttl_seconds > 0:
+                    with self._lock:
+                        self._cache[cache_key] = _Entry(time.monotonic() + self.settings.llm_cache_ttl_seconds, text)
+                        while len(self._cache) > self.settings.llm_cache_max_entries:
+                            self._cache.popitem(last=False)
+                self._log("local_lora_success")
+                return {"explanation": text}
+        except (ImportError, OSError, ValueError, TypeError, KeyError, AttributeError, IndexError, RuntimeError) as exc:
+            self.last_failure = "local_model_not_ready" if isinstance(exc, OSError) else "local_model_error"
+            self._log("local_lora_failure", error_type=type(exc).__name__)
+            return {"explanation": None}
 
     def _generate(self, base: str, model: str, key: str | None, payload: str,
                   plan: NarrativePlan | ConversationPlan, identity: str) -> str | None:

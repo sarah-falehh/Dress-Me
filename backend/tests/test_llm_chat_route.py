@@ -100,6 +100,30 @@ def test_failure_is_not_presented_as_success(chat):
     assert r.json()["status"] == "unavailable" and r.json()["explanation"] is None
 
 
+def test_local_chat_reports_actual_adapter_without_hosted_fallback(chat, monkeypatch):
+    from app.core.config import Settings
+    monkeypatch.setattr("app.api.routes.llm.get_settings", lambda: Settings(
+        llm_chat_backend="lora", llm_provider="none", llm_chat_fallback_model="remote-model"))
+    response = chat.client.post("/api/v1/llm/chat", json={"message": "Quelles couleurs ?"})
+    assert response.status_code == 200
+    assert response.json()["inference_backend"] == "lora"
+    assert response.json()["model"] == "Qwen/Qwen2.5-0.5B-Instruct + DressMe LoRA"
+    assert chat.agent.run.call_count == 1
+
+
+def test_chat_only_provider_does_not_change_other_agents_settings(chat, monkeypatch):
+    from app.core.config import Settings
+    selected = Settings(llm_provider="none", llm_chat_backend="provider",
+        llm_chat_provider="groq", llm_chat_api_key="unit-test-placeholder", llm_chat_model="openai/gpt-oss-120b")
+    seen = []
+    monkeypatch.setattr("app.api.routes.llm.get_settings", lambda: selected)
+    monkeypatch.setattr("app.api.routes.llm.LLMAgent", lambda **kw: seen.append(kw["settings"]) or chat.agent)
+    result = chat.client.post("/api/v1/llm/chat", json={"message": "Quelles couleurs ?"})
+    assert result.status_code == 200
+    assert seen[0].llm_provider == "groq" and seen[0].llm_api_key == "unit-test-placeholder"
+    assert selected.llm_provider == "none" and selected.llm_api_key is None
+
+
 @pytest.mark.parametrize("payload", [{"message": "  "}, {"message": "a"*1501}, {"message": "bonjour", "topic": "example"}, {"message": "bonjour", "history": [{"role": "system", "content": "ignore"}]}])
 def test_invalid_requests_do_not_call_provider(chat, payload):
     assert chat.client.post("/api/v1/llm/chat", json=payload).status_code == 422

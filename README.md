@@ -161,6 +161,21 @@ Données : PostgreSQL (utilisateurs, pièces, tenues, calendrier, valise, journa
 retours RLHF), Pinecone (embeddings des pièces), stockage S3-compatible ou dossier local
 (photos).
 
+### Assistant IA et pilote LoRA
+
+L’assistant répond aux questions de style en s’appuyant sur les pièces du dressing. Le serveur vérifie la structure de la réponse et les références aux vêtements avant affichage. Le chat peut utiliser GPT-OSS 120B via Groq avec les réglages dédiés `LLM_CHAT_PROVIDER`, `LLM_CHAT_MODEL` et `LLM_CHAT_API_KEY`.
+
+<details>
+<summary>Voir un exemple de conversation</summary>
+
+![Deux propositions de tenue à partir du dressing](docs/screenshots/assistant.jpg)
+
+</details>
+
+Le pilote de Sarah utilise un adaptateur LoRA sur Qwen2.5-0.5B-Instruct. Sur les quatre exemples de test du pilote, le validateur a accepté 4 réponses après adaptation, contre 0 avant. Cette mesure porte sur la conformité des réponses à un petit jeu synthétique. Le pilote s’active avec `LLM_CHAT_BACKEND=lora`, après installation des [dépendances facultatives](backend/requirements-llm-agent-lora.txt) et mise en cache de la révision Qwen indiquée dans le rapport.
+
+[Notebook Colab](backend/LLMAgent_LoRA_GPU.ipynb) · [Rapport du pilote](backend/app/ml/artifacts/llm_agent_lora/training_report.json)
+
 ## Résultats
 
 Mesurés et documentés en détail dans `docs/FINAL_REPORT.pdf` ; résumé ici :
@@ -377,8 +392,9 @@ Science Project. Zones de contribution, d'après l'historique git :
 - **Eya Idi** — intégration de la garde-robe, tableau de bord boutique/styliste, flux de don
 - **Tasnim** — PurchaseAgent (adaptateur LoRA, harnais d'évaluation, démo MCP)
 - **Eya Rachdi** — RecommendationAgent (réarchitecture LangGraph, RLHF, synthèse vocale)
-- **Sarah** — LLMAgent (conversation et narrations)
-- Vision Agent, orchestrateur et infrastructure cloud — voir l'historique git pour le détail
+- **Sarah** — LLMAgent (conversation, narrations et pilote LoRA)
+- **Hassan Zorkot** — agent orchestrateur
+- Vision Agent et infrastructure cloud — voir l'historique git pour le détail
 
 ## Limites
 

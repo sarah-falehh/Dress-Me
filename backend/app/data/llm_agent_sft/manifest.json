@@ -1,0 +1,10 @@
+{
+  "status": "synthetic_pilot_not_human_reviewed",
+  "counts": {
+    "train": 20,
+    "validation": 4,
+    "test": 4
+  },
+  "split_policy": "scenario groups separated before paraphrasing",
+  "limitations": "Small pilot; not evidence of generalization. Review and expand before final training."
+}
